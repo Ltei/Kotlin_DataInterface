@@ -1,0 +1,5 @@
+rootProject.name = 'datainterface'
+
+include ':processor'
+include ':annotation'
+include ':test'

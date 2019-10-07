@@ -1,0 +1,12 @@
+buildscript {
+    ext.kotlin_version = '1.3.21'
+    ext.kotlin_compile_path = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
