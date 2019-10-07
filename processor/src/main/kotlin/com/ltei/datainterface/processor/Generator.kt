@@ -26,6 +26,7 @@ object Generator {
                 )
             return result.build()
         }
+
         fun buildToUnsafeFun(config: InterfaceConfig): FunSpec {
             val result = FunSpec.builder("toUnsafe")
                 .returns(config.generatedUnsafe.className)
