@@ -91,3 +91,24 @@ class UnsafeModel(
   }
 }
 ````
+
+### How to use
+
+In your build.gradle :
+
+````groovy
+apply plugin: 'kotlin-kapt'
+
+...
+
+dependencies {
+    ...
+    
+    compile project(':annotation')
+    kapt project(':processor')
+    
+    ..
+}
+````
+
+That's all
