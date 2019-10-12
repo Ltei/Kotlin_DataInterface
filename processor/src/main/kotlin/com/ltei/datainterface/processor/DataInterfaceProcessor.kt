@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.ltei.datainterface.annotation.DataInterface
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
+import org.jetbrains.annotations.Nullable
 import java.io.File
 import javax.annotation.processing.*
 import javax.lang.model.SourceVersion
@@ -28,7 +29,8 @@ class DataInterfaceProcessor : AbstractProcessor() {
                 return false
             }
 
-            val info = buildInfo(element as TypeElement)
+            element as TypeElement
+            val info = buildInfo(element)
             val fileSpec = Generator.generate(info)
 
             val generationDirectory = processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]
@@ -39,7 +41,15 @@ class DataInterfaceProcessor : AbstractProcessor() {
     }
 
     private fun buildInfo(element: TypeElement): InterfaceConfig {
+        val annotation = element.getAnnotation(DataInterface::class.java)
+
+        require(annotation.interfaceName == "" || MiscUtils.isValidClassName(annotation.interfaceName)) { "The defined interface name isn't valid." }
+        require(annotation.implClassName == "" || MiscUtils.isValidClassName(annotation.implClassName)) { "The defined impl class name isn't valid." }
+        require(annotation.mutableClassName == "" || MiscUtils.isValidClassName(annotation.mutableClassName)) { "The defined mutable class name isn't valid." }
+        require(annotation.unsafeClassName == "" || MiscUtils.isValidClassName(annotation.unsafeClassName)) { "The defined unsafe class name isn't valid." }
+
         return InterfaceConfig(
+            annotation = annotation,
             packageName = element.asClassName().packageName,
             sourceName = element.simpleName.toString(),
             values = element.enclosedElements.filterIsInstance<ExecutableElement>().map { item ->
@@ -47,7 +57,11 @@ class DataInterfaceProcessor : AbstractProcessor() {
                 if (name.startsWith("get")) {
                     name = name.removePrefix("get").decapitalize()
                 }
-                InterfaceConfig.Value(name, item.returnType.asTypeName())
+
+                // Check if is nullable
+                val nullableAnnotation = item.getAnnotation(Nullable::class.java)
+                val nullable = nullableAnnotation != null
+                InterfaceConfig.Value(annotation, name, item.returnType.asTypeName().copy(nullable = nullable))
             }
         )
     }

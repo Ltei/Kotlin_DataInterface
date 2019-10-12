@@ -49,16 +49,24 @@ object Generator {
                     "return %T(${buildValuesParamString(config, toMutable = false)})",
                     config.generatedMutable.className
                 )
+            val newUnsafeBuilder = FunSpec.builder("newUnsafe").returns(config.generatedUnsafe.className)
+                .addStatement(
+                    "return %T(${buildValuesParamString(config, toMutable = false)})",
+                    config.generatedUnsafe.className
+                )
 
             // Set values
             for (value in config.values) {
                 newBuilder.addParameter(value.name, value.type)
                 newMutableBuilder.addParameter(value.name, value.mutableType)
+                newUnsafeBuilder.addParameter(ParameterSpec.builder(value.name, value.mutableType.copy(nullable = true))
+                    .defaultValue("null").build())
             }
 
             return TypeSpec.companionObjectBuilder()
                 .addFunction(newBuilder.build())
-                .addFunction(newMutableBuilder.build()).build()
+                .addFunction(newMutableBuilder.build())
+                .addFunction(newUnsafeBuilder.build()).build()
         }
 
         val builder = TypeSpec.interfaceBuilder(config.generatedInterface.className)
@@ -119,7 +127,7 @@ object Generator {
     // - unsafe
 
     private fun buildUnsafeClass(config: InterfaceConfig): TypeSpec {
-        fun buildToSafeFun(config: InterfaceConfig): FunSpec {
+        fun buildToSafeOrNullFun(config: InterfaceConfig): FunSpec {
             val code = StringBuilder()
             for (value in config.values) {
                 code.append("|val ${value.name} = this.${value.name}\n")
@@ -131,14 +139,24 @@ object Generator {
                 |} else null
                 |"""
             )
-            val result = FunSpec.builder("toSafe")
+            val result = FunSpec.builder("toSafeOrNull")
                 .returns(config.generatedMutable.className.copy(nullable = true))
                 .addCode(code.toString().trimMargin(), config.generatedMutable.className)
             return result.build()
         }
+//        fun buildToSafeOrThrowFun(config: InterfaceConfig): FunSpec {
+//            val result = FunSpec.builder("toSafeOrThrow")
+//                .returns(config.generatedMutable.className)
+//                .addStatement(
+//                    "return %T(${buildValuesNotNullParamString(config)})",
+//                    config.generatedMutable.className
+//                )
+//            return result.build()
+//        }
 
         val result = TypeSpec.classBuilder(config.generatedUnsafe.className)
-            .addFunction(buildToSafeFun(config))
+            .addFunction(buildToSafeOrNullFun(config))
+//            .addFunction(buildToSafeOrThrowFun(config))
         val constructor = FunSpec.constructorBuilder()
         for (value in config.values) {
             result.addProperty(
@@ -168,6 +186,15 @@ object Generator {
         val builder = StringBuilder()
         for ((idx, value) in config.values.withIndex()) {
             if (toMutable) builder.append(value.castToMutableStatement) else builder.append(value.name)
+            if (idx < config.values.lastIndex) builder.append(", ")
+        }
+        return builder.toString()
+    }
+
+    private fun buildValuesNotNullParamString(config: InterfaceConfig): String {
+        val builder = StringBuilder()
+        for ((idx, value) in config.values.withIndex()) {
+            builder.append(value.name).append("!!")
             if (idx < config.values.lastIndex) builder.append(", ")
         }
         return builder.toString()
