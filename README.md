@@ -101,14 +101,19 @@ apply plugin: 'kotlin-kapt'
 
 ...
 
+repositories {
+    ...
+    
+    mavenCentral()
+    maven { url "https://jitpack.io" }
+}
+
 dependencies {
     ...
     
-    compile project(':annotation')
-    kapt project(':processor')
-    
-    ..
+    compile('com.github.ltei.Kotlin_DataInterface:annotation:[version]')
+    kapt('com.github.ltei.Kotlin_DataInterface:processor:[version]')
 }
 ````
 
-That's all
+There is no release yet, so in [version] you can put 'master-SNAPSHOT'
